@@ -4,13 +4,13 @@
 
 .scatter-plot.canvas {
     position: absolute;
-    z-index: -1;
 }
 
 .scatter-plot.svg {
     position: absolute;
     pointer-events: none;
-    z-index: -2;
+    z-index: -1;
+    -webkit-transform: translate3d(0,0,0);
 }
 
 .scatter-plot {
