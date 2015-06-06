@@ -4,6 +4,7 @@
 
 .scatter-plot.canvas {
     position: absolute;
+    z-index: 1000;
 }
 
 .scatter-plot.svg {
