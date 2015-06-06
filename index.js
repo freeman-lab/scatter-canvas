@@ -7,7 +7,6 @@ var TooltipPlugin = require('d3-tip');
 TooltipPlugin(d3);
 
 
-
 var Scatter = function(selector, data, images, opts) {
     var margin = {
         top: 0,
@@ -97,8 +96,8 @@ Scatter.prototype._init = function() {
 
     var container = d3.select(selector)
         .append('div')
-        .attr('width', width + margin.left + margin.right)
-        .attr('height', height + margin.top + margin.bottom)
+        .style('width', width + margin.left + margin.right + "px")
+        .style('height', height + margin.top + margin.bottom + "px")
 
 
     var canvas = container
