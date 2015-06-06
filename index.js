@@ -3,6 +3,7 @@ require('d3-multiaxis-zoom')(d3);
 var inherits = require('inherits');
 var utils = require('lightning-client-utils');
 var _ = require('lodash');
+var Color = require('color');
 var TooltipPlugin = require('d3-tip');
 TooltipPlugin(d3);
 
@@ -165,26 +166,45 @@ Scatter.prototype._init = function() {
                 .tickSize(-width, 0, 0)
                 .tickFormat(''));
 
+    // function for handling opacity
+    var buildRGBA = function(fill, opacity) {
+        var color = Color(fill);
+        color.alpha(opacity);
+        return color.rgbString();
+    };
+
+    _.map(points, function(p) {
+        p.s = p.s ? p.s : self.defaultSize
+        p.cfill = buildRGBA(p.c ? p.c : self.defaultFill, p.a ? p.a : self.defaultAlpha)
+        p.cstroke = p.c ? p.c.darker(0.75) : self.defaultStroke
+        return p
+    })
+
+    // automatically set line width based on number of points
+    var lineWidth
+    if (points.length > 500) {
+        lineWidth = 1
+    } else {
+        lineWidth = 1.1
+    }
+
     draw();
 
     function draw() {
 
         var cx, cy, s;
 
-        canvas.globalAlpha = 0.9;
-        
-          _.forEach(points, function(p) {
+        _.forEach(points, function(p) {
             cx = self.x(p.x);
             cy = self.y(p.y);
-            s = p.s ? p.s : self.defaultSize
             canvas.beginPath();
-            canvas.arc(cx, cy, s, 0, 2 * Math.PI, false);
-            canvas.fillStyle = p.c ? p.c : self.defaultFill
-            canvas.lineWidth = 1.5
-            canvas.strokeStyle = p.c ? p.c.darker(0.75) : self.defaultStroke
+            canvas.arc(cx, cy, p.s, 0, 2 * Math.PI, false);
+            canvas.fillStyle = p.cfill
+            canvas.lineWidth = lineWidth
+            canvas.strokeStyle = p.cstroke
             canvas.fill()
             canvas.stroke()
-          })
+        })
           
     }
 
