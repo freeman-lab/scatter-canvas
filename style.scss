@@ -1,0 +1,48 @@
+.scatter-plot.canvas {
+    position: absolute;
+}
+
+.scatter-plot.svg {
+    position: absolute;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.scatter-plot {
+
+    .plot {
+        fill: #ffffff;
+    }
+    .grid .tick {
+        stroke: #BEC9CE;
+        opacity: 0.6;
+    }
+    .grid path {
+        stroke-width: 0;
+    }
+    .axis path, .axis line {
+        fill: none;
+        stroke: none;
+        shape-rendering: crispEdges;
+    }
+    .axis path {
+        display: none;
+    }
+    .line {
+        fill: none;
+        stroke: #9175f0;
+        stroke-width: 2px;
+    }
+
+    text {
+        fill: #A7A9AC;
+        font-family: monospace;
+        font-size: 14px;
+        font-weight: normal;
+
+        &.label {
+            fill: #A7A9AC;
+        }
+
+    }
+}
