@@ -106,7 +106,8 @@ Scatter.prototype._init = function() {
         .attr('class', 'scatter-plot canvas')
         .attr('width', width)
         .attr('height', height)
-        .style('padding', margin.top + 'px ' + margin.left + 'px')
+        .style('margin', margin.top + 'px ' + margin.left + 'px')
+        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
         .call(this.zoom)
         .node().getContext("2d")
 
@@ -119,6 +120,10 @@ Scatter.prototype._init = function() {
         .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
         .call(this.zoom)
 
+    svg.append('rect')
+        .attr('width', width)
+        .attr('height', height)
+        .attr('class', 'scatter-plot rect');
 
     var makeXAxis = function () {
         return d3.svg.axis()
@@ -176,7 +181,7 @@ Scatter.prototype._init = function() {
     _.map(points, function(p) {
         p.s = p.s ? p.s : self.defaultSize
         p.cfill = buildRGBA(p.c ? p.c : self.defaultFill, p.a ? p.a : self.defaultAlpha)
-        p.cstroke = p.c ? p.c.darker(0.75) : self.defaultStroke
+        p.cstroke = buildRGBA(p.c ? p.c.darker(0.75) : self.defaultStroke, p.a ? p.a : self.defaultAlpha)
         return p
     })
 
