@@ -69,37 +69,60 @@ Scatter.prototype._init = function() {
             return d.y;
         });
 
-    var sizeMax = d3.max(points, function(d) {
-            return d.s;
-        });
-
-    if (sizeMax) {
-        var padding = sizeMax / 2
-    } else {
-        var padding = self.defaultSize / 2
-    }
-
     var xRange = xDomain[1] - xDomain[0]
     var yRange = yDomain[1] - yDomain[0]
 
     this.x = d3.scale.linear()
         .domain([xDomain[0] - xRange * 0.1, xDomain[1] + xRange * 0.1])
-        .range([0 + padding, width - padding]);
+        .range([0, width]);
 
     this.y = d3.scale.linear()
         .domain([yDomain[0] - yRange * 0.1, yDomain[1] + yRange * 0.1])
-        .range([height - padding , 0 + padding]);
+        .range([height , 0]);
 
     this.zoom = d3.behavior.zoom()
         .x(this.x)
         .y(this.y)
         .on('zoom', zoomed);
 
+    var shiftKey;
+
+    var selected = [];
+
+    var brush = d3.svg.brush()
+        .x(this.x)
+        .y(this.y)
+        .on("brushstart", function() {
+            selected = []
+        })
+        .on("brush", function() {
+            if (shiftKey) {
+                selected = []
+                var extent = d3.event.target.extent();
+                console.log(extent)
+                _.forEach(points, function(p) {
+                    var cond1 = (p.x > extent[0][0] & p.x < extent[1][0])
+                    var cond2 = (p.y > extent[0][1] & p.y < extent[1][1])
+                    if (cond1 & cond2) {
+                        selected.push(p.i)
+                    }
+                })
+                console.log(selected)
+                canvas.clearRect(0, 0, width + margin.left + margin.right, height + margin.top + margin.bottom);
+                draw();
+            } else {
+              d3.select(this).call(d3.event.target);
+            }
+        })
+        .on("brushend", function() {
+            d3.event.target.clear();
+            d3.select(this).call(d3.event.target);
+        })
+
     var container = d3.select(selector)
         .append('div')
         .style('width', width + margin.left + margin.right + "px")
         .style('height', height + margin.top + margin.bottom + "px")
-
 
     var canvas = container
         .append('canvas')
@@ -120,10 +143,25 @@ Scatter.prototype._init = function() {
         .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
         .call(this.zoom)
 
+    var brushrect = container
+        .append('svg:svg')
+        .attr('class', 'scatter-plot brush-container')
+        .attr('width', width + margin.left + margin.right)
+        .attr('height', height + margin.top + margin.bottom)
+    .append("g")
+        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+        .attr('class', 'brush')
+        .call(brush)
+
     svg.append('rect')
         .attr('width', width)
         .attr('height', height)
         .attr('class', 'scatter-plot rect');
+
+    d3.selectAll('.brush .background')
+        .style('cursor', 'default')
+    d3.selectAll('.brush')
+        .style('pointer-events', 'none')
 
     var makeXAxis = function () {
         return d3.svg.axis()
@@ -200,13 +238,25 @@ Scatter.prototype._init = function() {
         var cx, cy, s;
 
         _.forEach(points, function(p) {
+            var alpha
+            if (selected.length > 0) {
+                if (_.indexOf(selected, p.i) >= 0) {
+                    console.log(p.i)
+                    console.log('point is selected')
+                    alpha = 0.9
+                } else {
+                    alpha = 0.1
+                }
+            } else {
+                alpha = p.a ? p.a : self.defaultAlpha
+            }
             cx = self.x(p.x);
             cy = self.y(p.y);
             canvas.beginPath();
             canvas.arc(cx, cy, p.s, 0, 2 * Math.PI, false);
-            canvas.fillStyle = p.cfill
+            canvas.fillStyle = buildRGBA(p.c ? p.c : self.defaultFill, alpha)
             canvas.lineWidth = lineWidth
-            canvas.strokeStyle = p.cstroke
+            canvas.strokeStyle = buildRGBA(p.c ? p.c.darker(0.75) : self.defaultStroke, alpha)
             canvas.fill()
             canvas.stroke()
         })
@@ -261,6 +311,22 @@ Scatter.prototype._init = function() {
             .attr("y", -50)
             .text(txt);
     }
+
+    d3.select(window).on("keydown", function() {
+        shiftKey = d3.event.shiftKey;
+        if (shiftKey) {
+            console.log('turning on pointer events')
+            d3.selectAll('.brush').style('pointer-events', 'all')
+            d3.selectAll('.brush .background').style('cursor', 'crosshair')
+        }
+    });
+
+    d3.select(window).on("keyup", function() {
+        if (shiftKey) {
+            d3.selectAll('.brush').style('pointer-events', 'none')
+            d3.selectAll('.brush .background').style('cursor', 'default')
+        }
+    });
     
     this.svg = svg;
     this.points = points;
@@ -285,78 +351,4 @@ Scatter.prototype._formatData = function(data) {
 
     return data
 
-};
-
-Scatter.prototype.updateData = function(data) {
-    
-    // update existing points, add new ones
-    // and delete old ones
-   
-    self = this
-    var x = this.x
-    var y = this.y
-
-    var newdat = this.svg.selectAll('circle')
-        .data(this._formatData(data).points)
-        
-    newdat.transition().ease('linear')
-        .attr('class', 'dot')
-        .attr('r', function(d) { return (d.s ? d.s : self.defaultSize)})
-        .attr('transform', function(d) {
-            return 'translate(' + x(d.x) + ',' + y(d.y) + ')';
-        })
-        .style('fill',function(d) { return (d.c ? d.c : self.defaultFill);})
-        .style('stroke',function(d) { return (d.c ? d.c.darker(0.75) : self.defaultStroke);})
-        .style('fill-opacity',function(d) { return (d.a ? d.a : self.defaultAlpha);})
-        .style('stroke-opacity',function(d) { return (d.a ? d.a : self.defaultAlpha);})
-
-    newdat.enter()
-        .append('circle')
-        .on('mouseover', self.darken)
-        .on('mouseout', self.brighten)
-        .style('opacity', 0.0)
-        .attr('class','dot')
-        .attr('r', function(d) { return (d.s ? d.s : self.defaultSize)})
-        .attr('transform', function(d) {return 'translate(' + x(d.x) + ',' + y(d.y) + ')';})
-        .style('fill',function(d) { return (d.c ? d.c : self.defaultFill);})
-        .style('stroke',function(d) { return (d.c ? d.c.darker(0.75) : self.defaultStroke);})
-        .style('fill-opacity', function(d) { return (d.a ? d.a : self.defaultOpacity)})
-        .style('stroke-opacity',function(d) { return (d.a ? d.a : self.defaultAlpha);})
-      .transition().ease('linear')
-        .duration(300)
-        .style('opacity', 1.0)
-        
-    newdat.exit().transition().ease('linear')
-        .style('opacity', 0.0).remove()
-    
-};
-
-Scatter.prototype.appendData = function(data) {
-    
-    // add new points to existing points
-   
-    this.points = this.points.concat(this._formatData(data).points)
-    points = this.points
-
-    self = this
-    var x = this.x
-    var y = this.y
-    
-    this.svg.selectAll('circle')
-        .data(points)
-      .enter().append('circle')
-        .style('opacity', 0.0)
-        .attr('class', 'dot')
-        .attr('r', function(d) { return (d.s ? d.s : self.defaultSize)})
-        .attr('transform', function(d) {return 'translate(' + x(d.x) + ',' + y(d.y) + ')';})
-        .style('fill',function(d) { return (d.c ? d.c : self.defaultFill);})
-        .style('stroke',function(d) { return (d.c ? d.c.darker(0.75) : self.defaultStroke);})
-        .style('fill-opacity', function(d) { return (d.a ? d.a : self.defaultOpacity)})
-        .style('stroke-opacity',function(d) { return (d.a ? d.a : self.defaultAlpha);})
-        .on('mouseover', self.darken)
-        .on('mouseout', self.brighten)
-      .transition()
-        .ease('linear')
-        .duration(300)
-        .style('opacity', 1.0)
 };

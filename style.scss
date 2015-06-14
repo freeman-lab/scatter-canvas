@@ -20,6 +20,20 @@
     z-index: 100;
 }
 
+.scatter-plot.brush-container {
+    z-index : 0;
+    pointer-events: none;
+}
+
+.brush {
+    pointer-events: none;
+}
+
+.brush .extent {
+    fill-opacity: .1;
+    shape-rendering: crispEdges;
+}
+
 .scatter-plot {
 
     .plot {
