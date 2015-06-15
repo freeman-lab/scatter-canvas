@@ -132,6 +132,7 @@ Scatter.prototype._init = function() {
         .style('margin', margin.top + 'px ' + margin.left + 'px')
         .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
         .call(this.zoom)
+        .on("click", mouseHandler)
         .node().getContext("2d")
 
     var svg = container
@@ -162,6 +163,13 @@ Scatter.prototype._init = function() {
         .style('cursor', 'default')
     d3.selectAll('.brush')
         .style('pointer-events', 'none')
+
+    function mouseHandler() {
+        if (d3.event.defaultPrevented) return;
+        selected = []
+        canvas.clearRect(0, 0, width + margin.left + margin.right, height + margin.top + margin.bottom);
+        draw();
+    }
 
     var makeXAxis = function () {
         return d3.svg.axis()
